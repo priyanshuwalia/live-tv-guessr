@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { VideoPlayer } from './components/VideoPlayer';
 import { WorldMap } from './components/WorldMap';
 import { Trash2 } from 'lucide-react';
@@ -11,14 +11,54 @@ interface Channel {
   countryName: string;
 }
 
+interface Player {
+  username: string;
+}
+
 function App() {
   const [channel, setChannel] = useState<Channel | null>(null);
   const [selectedGuess, setSelectedGuess] = useState<{ code: string; name: string } | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const socketRef = useRef<WebSocket | null>(null);
+
+  useEffect(() => {
+    const socket = new WebSocket('ws://localhost:8080');
+    socketRef.current = socket;
+
+    socket.onopen = () => {
+      console.log('Connected to WebSocket server');
+      const username = `Player_${Math.floor(Math.random() * 1000)}`;
+      socket.send(JSON.stringify({ type: "join_room", roomId: "lobby-777", username }));
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "room_update") {
+          setPlayers(data.players);
+        }
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
+      }
+    };
+
+    socket.onclose = () => {
+      console.log('Disconnected from WebSocket server');
+    };
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null;
+      }
+    };
+  }, []);
+
   const handleDeleteStream = async () => {
     if (!channel) return;
-    
+
     // Optional: Add a quick confirmation so you don't accidentally click it
     const confirmDelete = window.confirm(`Permanently delete ${channel.countryName} stream from database?`);
     if (!confirmDelete) return;
@@ -27,9 +67,9 @@ function App() {
       const response = await fetch(`http://localhost:8080/api/channels/${channel.id}`, {
         method: 'DELETE',
       });
-      
+
       if (!response.ok) throw new Error('Failed to delete channel');
-      
+
       console.log('🗑️ Stream deleted successfully');
       // Immediately pull a new working channel
       fetchRandomChannel();
@@ -38,7 +78,7 @@ function App() {
       alert('Could not delete the stream.');
     }
   };
-  // Fetch a random channel from our Port 8080 Backend API on load
+
   const fetchRandomChannel = async () => {
     setLoading(true);
     setError(null);
@@ -48,7 +88,7 @@ function App() {
       const response = await fetch('http://localhost:8080/api/channels'); // Make sure you expose this on backend!
       if (!response.ok) throw new Error('Failed to retrieve channels');
       const data = await response.json();
-      
+
       if (data && data.length > 0) {
         // Pick a random stream from our seed list
         const randomStream = data[Math.floor(Math.random() * data.length)];
@@ -63,17 +103,13 @@ function App() {
     }
   };
 
-  useEffect(() => {
-    fetchRandomChannel();
-  }, []);
-
   const handleCountrySelect = (code: string, name: string) => {
     setSelectedGuess({ code, name });
   };
 
-const handleSubmitGuess = () => {
+  const handleSubmitGuess = () => {
     if (!selectedGuess || !channel) return;
-    
+
     // Strict, reliable code comparison
     if (selectedGuess.code === channel.countryCode) {
       alert(`🎉 Correct! It was indeed ${channel.countryName}!`);
@@ -83,22 +119,22 @@ const handleSubmitGuess = () => {
       const actualCoords = countryCoordinates[channel.countryCode];
       //@ts-ignore
       const guessCoords = countryCoordinates[selectedGuess.code];
-      
+
       if (!actualCoords || !guessCoords) {
         alert(`❌ Incorrect! You guessed ${selectedGuess.name}, but it was actually ${channel.countryName}.`);
         return;
       }
-      
+
       const distance = haversine(
         guessCoords.lat,
         guessCoords.lon,
         actualCoords.lat,
         actualCoords.lon
       );
-      
+
       alert(`❌ Incorrect! You guessed ${selectedGuess.name}, which is ${distance.toFixed(0)} km away from the actual location.`);
     }
-    
+
     fetchRandomChannel();
   };
 
@@ -126,12 +162,6 @@ const handleSubmitGuess = () => {
             Skip Stream
           </button>
         </div>
-        <button 
-          onClick={fetchRandomChannel}
-          className="px-4 py-2 bg-gray-800 hover:bg-gray-700 transition rounded-lg text-sm font-semibold border border-gray-700"
-        >
-          Skip Stream
-        </button>
       </header>
 
       <main className="w-full max-w-6xl flex flex-col gap-6">
@@ -161,6 +191,16 @@ const handleSubmitGuess = () => {
             Lock In Guess
           </button>
         </div>
+
+        {/* NEW: Player List Panel */}
+        <aside className="fixed bottom-4 right-4 bg-gray-800 p-4 rounded-lg shadow-lg">
+          <h3 className="text-xl font-bold mb-2">Players in Room</h3>
+          <ul className="list-disc pl-6">
+            {players.map((player, index) => (
+              <li key={index}>{player.username}</li>
+            ))}
+          </ul>
+        </aside>
       </main>
     </div>
   );
