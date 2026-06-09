@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { VideoPlayer } from './components/VideoPlayer';
 import { WorldMap } from './components/WorldMap';
 import { Trash2 } from 'lucide-react';
+import { countryCoordinates, haversine } from './utils/distance';
 
 interface Channel {
   id: string;
@@ -77,7 +78,23 @@ const handleSubmitGuess = () => {
     if (selectedGuess.code === channel.countryCode) {
       alert(`🎉 Correct! It was indeed ${channel.countryName}!`);
     } else {
-      alert(`❌ Incorrect! You guessed ${selectedGuess.name}, but it was actually ${channel.countryName}.`);
+      // Get coordinates for both countries
+      const actualCoords = countryCoordinates[channel.countryCode];
+      const guessCoords = countryCoordinates[selectedGuess.code];
+      
+      if (!actualCoords || !guessCoords) {
+        alert(`❌ Incorrect! You guessed ${selectedGuess.name}, but it was actually ${channel.countryName}.`);
+        return;
+      }
+      
+      const distance = haversine(
+        guessCoords.lat,
+        guessCoords.lon,
+        actualCoords.lat,
+        actualCoords.lon
+      );
+      
+      alert(`❌ Incorrect! You guessed ${selectedGuess.name}, which is ${distance.toFixed(0)} km away from the actual location.`);
     }
     
     fetchRandomChannel();
