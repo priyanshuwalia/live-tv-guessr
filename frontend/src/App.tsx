@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { VideoPlayer } from './components/VideoPlayer';
 import { WorldMap } from './components/WorldMap';
 import { Trash2 } from 'lucide-react';
@@ -139,70 +140,13 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center p-6">
-      <header className="w-full max-w-6xl mb-8 flex justify-between items-center border-b border-gray-800 pb-4">
-        <h1 className="text-2xl font-bold tracking-wider text-blue-500">📺 LiveTVGuessr</h1>
-        {/* NEW: Updated Header Buttons */}
-        <div className="flex gap-3">
-          <button 
-            onClick={handleDeleteStream}
-            disabled={!channel || loading}
-            className="flex items-center gap-2 px-4 py-2 bg-red-900/40 hover:bg-red-800/80 text-red-200 transition rounded-lg text-sm font-semibold border border-red-800/50 disabled:opacity-50"
-            title="Delete this broken stream from the database"
-          >
-            <Trash2 size={16} />
-            <span>Remove Broken</span>
-          </button>
-
-          <button 
-            onClick={fetchRandomChannel}
-            disabled={loading}
-            className="px-4 py-2 bg-gray-800 hover:bg-gray-700 transition rounded-lg text-sm font-semibold border border-gray-700 disabled:opacity-50"
-          >
-            Skip Stream
-          </button>
-        </div>
-      </header>
-
-      <main className="w-full max-w-6xl flex flex-col gap-6">
-        {error && (
-          <div className="bg-red-900/30 border border-red-500/50 text-red-200 p-4 rounded-xl text-center">
-            {error}
-          </div>
-        )}
-
-        <div className="w-full">
-          {channel && <VideoPlayer streamUrl={channel.streamUrl} />}
-        </div>
-
-        <div className="w-full">
-          <WorldMap 
-            onCountrySelect={handleCountrySelect} 
-            selectedCountryCode={selectedGuess?.code} 
-          />
-        </div>
-
-        <div className="flex justify-end mt-2">
-          <button
-            disabled={!selectedGuess || loading}
-            onClick={handleSubmitGuess}
-            className="px-8 py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:hover:bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 transition-all duration-200 uppercase tracking-wide"
-          >
-            Lock In Guess
-          </button>
-        </div>
-
-        {/* NEW: Player List Panel */}
-        <aside className="fixed bottom-4 right-4 bg-gray-800 p-4 rounded-lg shadow-lg">
-          <h3 className="text-xl font-bold mb-2">Players in Room</h3>
-          <ul className="list-disc pl-6">
-            {players.map((player, index) => (
-              <li key={index}>{player.username}</li>
-            ))}
-          </ul>
-        </aside>
-      </main>
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Navigate to="/play" />} />
+        <Route path="/play" element={<PlayPage channel={channel} setChannel={setChannel} selectedGuess={selectedGuess} setSelectedGuess={setSelectedGuess} loading={loading} error={error} setError={setError} players={players} setPlayers={setPlayers} handleCountrySelect={handleCountrySelect} handleSubmitGuess={handleSubmitGuess} />} />
+        <Route path="/create-room" element={<CreateRoomPage />} />
+      </Routes>
+    </Router>
   );
 }
 
