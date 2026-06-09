@@ -79,7 +79,9 @@ const handleSubmitGuess = () => {
       alert(`🎉 Correct! It was indeed ${channel.countryName}!`);
     } else {
       // Get coordinates for both countries
+      //@ts-ignore
       const actualCoords = countryCoordinates[channel.countryCode];
+      //@ts-ignore
       const guessCoords = countryCoordinates[selectedGuess.code];
       
       if (!actualCoords || !guessCoords) {

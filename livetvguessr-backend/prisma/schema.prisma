@@ -1,0 +1,96 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id             String   @id @default(uuid())
+  email          String   @unique
+  username       String   @unique
+  passwordHash   String   // Storing bcrypt hashes, never plaintext
+  avatarUrl      String?  // Optional for MVP
+  
+  // Stats (Easier to store them here than aggregate every time for the leaderboard)
+  totalScore     Int      @default(0)
+  gamesPlayed    Int      @default(0)
+  correctGuesses Int      @default(0)
+  currentStreak  Int      @default(0)
+  highestStreak  Int      @default(0)
+  eloRating      Int      @default(1200) // Future-proofing for Ranked Mode
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  guesses        Guess[]
+  roomsOwned     Room[]   @relation("RoomOwner")
+}
+
+model Channel {
+  id           String   @id @default(uuid())
+  streamUrl    String   // The .m3u8 HLS URL
+  countryCode  String   // ISO 3166-1 alpha-2 (e.g., "JP", "BR")
+  countryName  String   // Human readable
+  language     String?
+  category     String?  // e.g., "News", "Sports", "General"
+  isActive     Boolean  @default(true) // Flip to false if stream dies
+  
+  createdAt    DateTime @default(now())
+
+  rounds       Round[]
+}
+
+model Room {
+  id           String   @id @default(uuid())
+  ownerId      String?  // Nullable if it's a daily challenge or global room
+  status       RoomStatus @default(WAITING)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  owner        User?    @relation("RoomOwner", fields: [ownerId], references: [id])
+  rounds       Round[]
+}
+
+model Round {
+  id           String   @id @default(uuid())
+  roomId       String
+  channelId    String
+  roundNumber  Int      @default(1)
+  startTime    DateTime @default(now())
+  endTime      DateTime? // Set when round finishes
+
+  room         Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  channel      Channel  @relation(fields: [channelId], references: [id])
+  guesses      Guess[]
+}
+
+model Guess {
+  id                 String   @id @default(uuid())
+  userId             String
+  roundId            String
+  guessedCountryCode String
+  distanceKm         Float    // Calculated on backend when guess is submitted
+  score              Int
+  responseTimeMs     Int      // How long it took them to guess (for tie-breakers)
+  
+  createdAt          DateTime @default(now())
+
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  round              Round    @relation(fields: [roundId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roundId]) // A user can only guess once per round
+}
+
+enum RoomStatus {
+  WAITING
+  PLAYING
+  FINISHED
+}
