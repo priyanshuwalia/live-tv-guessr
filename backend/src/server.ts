@@ -101,5 +101,5 @@ app.use(passport.initialize());
 app.use('/api/auth', authRoutes);
 app.use('/api/channels', channelRoutes);
 server.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(` Server running on http://localhost:${PORT}`);
 });

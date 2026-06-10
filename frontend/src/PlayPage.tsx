@@ -1,8 +1,10 @@
 import React from 'react';
-import { VideoPlayer } from '../components/VideoPlayer';
-import { WorldMap } from '../components/WorldMap';
+
+
 import { Trash2 } from 'lucide-react';
-import { countryCoordinates, haversine } from '../utils/distance';
+import { countryCoordinates, haversine } from './utils/distance';
+import { VideoPlayer } from './components/VideoPlayer';
+import { WorldMap } from './components/WorldMap';
 
 interface Channel {
   id: string;
@@ -140,15 +142,7 @@ const PlayPage: React.FC<PlayPageProps> = ({
           </button>
         </div>
 
-        {/* NEW: Player List Panel */}
-        <aside className="fixed bottom-4 right-4 bg-gray-800 p-4 rounded-lg shadow-lg">
-          <h3 className="text-xl font-bold mb-2">Players in Room</h3>
-          <ul className="list-disc pl-6">
-            {players.map((player, index) => (
-              <li key={index}>{player.username}</li>
-            ))}
-          </ul>
-        </aside>
+        
       </main>
     </div>
   );

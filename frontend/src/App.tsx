@@ -1,9 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import { VideoPlayer } from './components/VideoPlayer';
-import { WorldMap } from './components/WorldMap';
-import { Trash2 } from 'lucide-react';
+
 import { countryCoordinates, haversine } from './utils/distance';
+import PlayPage from './PlayPage';
+import CreateRoomPage from './CreateRoomPage';
 
 interface Channel {
   id: string;
